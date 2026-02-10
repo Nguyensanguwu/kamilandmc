@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KamiLand</title>
+    
+    <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/3737/3737581.png">
+    
+    <style>
+        /* --- CẤU HÌNH CHUNG --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow-x: hidden; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-image: url('https://i.redd.it/6921bld180rd1.png');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px;
+            padding: 40px 0;
+        }
+
+        body::before {
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.2); z-index: -1;
+        }
+
+        /* --- CÁC KHUNG KÍNH MỜ (GLASS CARD) --- */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 30px; padding: 25px; width: 90%; max-width: 580px;
+            text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            color: white; position: relative;
+            transition: 0.3s ease;
+        }
+        .glass-card:hover { transform: translateY(-5px); }
+
+        h1 { font-size: 45px; letter-spacing: 3px; }
+
+        /* --- NÚT BẤM VÀ DROPDOWN --- */
+        .nav-container { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; }
+        
+        .ios-btn {
+            border: none; height: 48px; width: 155px; border-radius: 18px;
+            font-weight: bold; cursor: pointer; color: white;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+
+        .dropdown { position: relative; padding-bottom: 10px; margin-bottom: -10px; }
+        .dropdown-content {
+            visibility: hidden; opacity: 0; position: absolute; top: 55px; left: 50%;
+            transform: translateX(-50%) translateY(-10px); min-width: 175px;
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(30px);
+            border-radius: 20px; border: 1px solid rgba(255,255,255,0.3);
+            z-index: 9999; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .dropdown:hover .dropdown-content { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+        
+        .dropdown-content a {
+            color: white; padding: 14px 18px; text-decoration: none; display: block; 
+            font-size: 14px; text-align: left; transition: 0.3s;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .dropdown-content a:hover { background: rgba(255, 255, 255, 0.2); padding-left: 25px; }
+
+        .btn-join { background: #7d5fff; } 
+        .btn-wiki { background: #3ae374; } 
+        .btn-utils { background: #ff9f1a; }
+
+        /* --- BOX ĐỊA CHỈ IP & COPY --- */
+        .ip-box {
+            background: rgba(255,255,255,0.1); padding: 12px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2); margin-top: 10px;
+            cursor: pointer; position: relative; overflow: hidden; transition: 0.2s;
+        }
+        .ip-box:active { transform: scale(0.97); background: rgba(255,255,255,0.2); }
+        
+        .ip-box p {
+            font-weight: bold; font-size: 24px; color: #41fc60;
+            text-shadow: 0 0 15px rgba(65, 252, 96, 0.5);
+        }
+
+        .copy-tooltip {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #41fc60; color: #000; padding: 4px 12px; border-radius: 10px;
+            font-size: 13px; font-weight: bold; opacity: 0; transition: 0.3s; pointer-events: none;
+        }
+        .copy-tooltip.show { opacity: 1; transform: translate(-50%, -50%); }
+
+        /* --- THÔNG TIN CHI TIẾT --- */
+        .info-list { text-align: left; display: inline-block; font-size: 15px; line-height: 2.2; }
+        .info-list i { width: 25px; text-align: center; margin-right: 12px; font-size: 18px; }
+
+        /* --- SIDEBAR & MENU --- */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px);
+            z-index: 998; display: none; transition: 0.5s;
+        }
+        .sidebar {
+            position: fixed; left: -320px; top: 0; width: 280px; height: 100%; 
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(40px);
+            z-index: 999; transition: 0.5s cubic-bezier(0.77, 0, 0.175, 1); 
+            padding: 60px 20px; border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .sidebar.active { left: 0; }
+        .sidebar h2 { color: white; text-align: center; margin-bottom: 40px; letter-spacing: 2px; font-size: 18px; }
+
+        .sidebar-links a {
+            display: flex; align-items: center; padding: 16px 20px; color: white;
+            text-decoration: none; margin-bottom: 15px; border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.3s;
+        }
+        .sidebar-links a:hover { background: rgba(255, 255, 255, 0.2); transform: translateX(10px); }
+
+        .close-btn {
+            width: 100%; margin-top: 30px; padding: 15px; border-radius: 20px;
+            border: none; background: rgba(125, 95, 255, 0.4); color: white;
+            font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+
+        .menu-btn {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            background: rgba(255, 255, 255, 0.15); padding: 12px 15px;
+            border-radius: 15px; cursor: pointer; color: white; backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* --- HIỆU ỨNG HOA RƠI --- */
+        .sakura {
+            position: fixed; background-color: #ffb7c5;
+            border-radius: 100% 0 100% 0; pointer-events: none;
+            z-index: 5; animation: fall linear forwards;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* --- RESPONSIVE CHO ĐIỆN THOẠI --- */
+        @media (max-width: 600px) {
+            body { padding: 20px 0; gap: 10px; }
+            h1 { font-size: 32px; letter-spacing: 2px; }
+            .glass-card { padding: 20px 15px; }
+            .ios-btn { width: 130px; height: 44px; font-size: 13px; }
+            .ip-box p { font-size: 18px; }
+            .info-list { font-size: 13px; }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+    <div class="menu-btn" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+
+    <div id="sidebar" class="sidebar">
+        <h2>TÍNH NĂNG CHƯA HOÀN THIỆN</h2>
+        <div class="sidebar-links">
+            <a href="#"><i class="fas fa-comment-dots" style="color: #3ae374;"></i> Gửi phản hồi</a>
+            <a href="#"><i class="fas fa-chart-line" style="color: #ff9f1a;"></i> Bảng xếp hạng</a>
+            <a href="#"><i class="fas fa-user-shield" style="color: #7d5fff;"></i> Quản trị viên</a>
+        </div>
+        <button onclick="toggleMenu()" class="close-btn">ĐÓNG</button>
+    </div>
+
+    <div class="glass-card" style="z-index: 30;">
+        <h1>Kami<span style="color: #41fc60;">Land</span></h1>
+        <p style="color: #bbb; margin-bottom: 10px; font-size: 14px;">Hành trình kỳ ảo trong rừng đêm</p>
+        
+        <div class="nav-container">
+            <div class="dropdown">
+                <button class="ios-btn btn-join">Tham gia ngay <i class="fas fa-caret-down" style="margin-left:5px;"></i></button>
+                <div class="dropdown-content">
+                    <a href="https://discord.gg/sDU9TedbvQ" target="_blank"><i class="fab fa-discord" style="color:#5865F2;"></i> Discord</a>
+                    <a href="https://zalo.me/g/esxugs214" target="_blank"><i class="fas fa-comment-alt" style="color:#0068ff;"></i> Nhóm Zalo</a>
+                </div>
+            </div>
+            <a href="#" class="ios-btn btn-wiki">Wiki Server</a>
+            <div class="dropdown">
+                <button class="ios-btn btn-utils">Tiện ích <i class="fas fa-caret-down" style="margin-left:5px;"></i></button>
+                <div class="dropdown-content">
+                    <a href="http://kamiland.my-land.fun:25841/"><i class="fas fa-map" style="color:#3ae374;"></i> Bản đồ</a>
+                    <a href="#"><i class="fas fa-medal" style="color:#ff9f1a;"></i> Thành tựu</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card" style="z-index: 20;">
+        <h3 style="font-size: 16px; letter-spacing: 1px;"><i class="fas fa-gamepad" style="color: #3ae374;"></i> ĐỊA CHỈ SERVER</h3>
+        <div class="ip-box" onclick="copyIP()">
+            <p id="ip-text">kamiland.my-land.fun:26196</p>
+            <span class="copy-tooltip" id="copy-status">Đã copy!</span>
+        </div>
+        <p style="font-size: 11px; color: #aaa; margin-top: 10px;">Nhấn vào để sao chép • Phiên bản: PC/PE </p>
+    </div>
+
+    <div class="glass-card" style="z-index: 10;">
+        <h3 style="font-size: 16px; margin-bottom: 15px; letter-spacing: 1px;"><i class="fas fa-user-crown" style="color: #ff9f1a;"></i> Server đang thử nghiệm !</h3>
+        <div class="info-list">
+            <div><i class="fas fa-user-circle" style="color: #ff9f1a;"></i> <b>Nguyễn Ngọc Sang</b></div>
+            <div><i class="fas fa-envelope" style="color: #7d5fff;"></i> nguyenngocsangvn2009@gmail.com</div>
+        </div>
+    </div>
+
+    <script>
+        // Hàm đóng mở Sidebar
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('active');
+            overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
+        }
+
+        // Hàm Copy IP
+        function copyIP() {
+            const ipText = document.getElementById('ip-text').innerText;
+            const status = document.getElementById('copy-status');
+            
+            navigator.clipboard.writeText(ipText).then(() => {
+                status.classList.add('show');
+                setTimeout(() => { status.classList.remove('show'); }, 1500);
+            });
+        }
+
+        // Hiệu ứng hoa anh đào
+        function createSakura() {
+            const sakura = document.createElement('div');
+            sakura.classList.add('sakura');
+            const size = Math.random() * 8 + 7 + 'px';
+            sakura.style.width = size;
+            sakura.style.height = size;
+            sakura.style.left = Math.random() * 100 + 'vw';
+            sakura.style.animationDuration = Math.random() * 3 + 5 + 's';
+            document.body.appendChild(sakura);
+            setTimeout(() => { sakura.remove(); }, 8000);
+        }
+        setInterval(createSakura, 400);
+    </script>
+</body>
+</html>
