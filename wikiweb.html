@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KamiWiki - Hướng dẫn Server</title>
+    <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/3737/3737581.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* --- CẤU HÌNH GIAO DIỆN CHUNG --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-image: url('https://i.redd.it/6921bld180rd1.png');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            color: white; height: 100vh; display: flex; overflow: hidden;
+        }
+
+        body::before {
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4); z-index: -1;
+        }
+
+        /* --- NÚT MENU MOBILE --- */
+        .menu-toggle {
+            position: fixed; top: 15px; left: 15px; z-index: 1100;
+            background: #41fc60; color: black; border: none;
+            width: 45px; height: 45px; border-radius: 12px;
+            display: none; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 1.2rem; transition: 0.3s;
+        }
+
+        /* --- SIDEBAR (THANH BÊN) --- */
+        .wiki-sidebar {
+            width: 300px; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px); border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; flex-direction: column; padding: 25px 15px; z-index: 1000;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .wiki-logo {
+            font-size: 24px; font-weight: bold; margin-bottom: 25px;
+            text-align: center; letter-spacing: 2px;
+        }
+
+        /* SEARCH BOX */
+        .search-container { position: relative; margin-bottom: 20px; }
+        .search-input {
+            width: 100%; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px; padding: 12px 15px 12px 40px; color: white; outline: none; font-size: 14px;
+            transition: 0.3s;
+        }
+        .search-input:focus { border-color: #41fc60; background: rgba(255, 255, 255, 0.15); }
+        .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #aaa; }
+
+        /* MENU ITEMS */
+        .menu-item {
+            padding: 12px 18px; border-radius: 15px; cursor: pointer; transition: 0.3s;
+            margin-bottom: 6px; display: flex; align-items: center; gap: 12px;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid transparent;
+        }
+        .menu-item:hover { background: rgba(255, 255, 255, 0.15); transform: translateX(5px); }
+        .menu-item.active { background: rgba(65, 252, 96, 0.2); border: 1px solid rgba(65, 252, 96, 0.4); color: #41fc60; }
+        .hidden { display: none; }
+
+        /* --- NỘI DUNG CHÍNH --- */
+        .wiki-main { flex: 1; padding: 40px; overflow-y: auto; display: flex; justify-content: center; position: relative; }
+        .content-card {
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(25px); border-radius: 30px;
+            padding: 40px; width: 100%; max-width: 950px; border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); height: fit-content;
+        }
+
+        .tab-content { display: none; animation: fadeIn 0.5s ease; }
+        .tab-content.active { display: block; }
+
+        h1 { font-size: 32px; margin-bottom: 20px; color: #41fc60; border-bottom: 2px solid rgba(65, 252, 96, 0.3); padding-bottom: 10px; }
+        h2 { font-size: 22px; margin: 25px 0 15px 0; color: #3ae374; }
+        p { line-height: 1.7; color: #e0e0e0; margin-bottom: 15px; }
+
+        code {
+            background: #ff9f1a; color: white; padding: 2px 8px; border-radius: 6px;
+            font-family: 'Consolas', monospace; font-weight: bold; font-size: 0.9em;
+            margin: 0 2px; display: inline-block;
+        }
+
+        /* CARD CHI TIẾT */
+        .guide-card {
+            background: rgba(255, 255, 255, 0.07); border-radius: 18px; margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;
+        }
+        .guide-header { padding: 18px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
+        .guide-header:hover { background: rgba(255,255,255,0.1); }
+        .guide-body { padding: 0 20px; max-height: 0; overflow: hidden; transition: 0.3s ease-out; background: rgba(0,0,0,0.15); }
+        .guide-body.show { padding: 20px; max-height: 800px; }
+
+        .step-item { margin-bottom: 10px; padding-left: 15px; border-left: 3px solid #7d5fff; }
+        .law-item { background: rgba(255, 71, 87, 0.1); border-left: 4px solid #ff4757; padding: 12px; margin-bottom: 10px; border-radius: 0 10px 10px 0; }
+
+        .plugin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px; }
+        .plugin-box { background: rgba(255, 255, 255, 0.07); padding: 15px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); transition: 0.3s; }
+        .plugin-box:hover { transform: translateY(-5px); background: rgba(255,255,255,0.1); }
+        .plugin-box b { color: #ff9f1a; display: block; margin-bottom: 5px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .sakura { position: fixed; background-color: #ffb7c5; border-radius: 100% 0 100% 0; pointer-events: none; z-index: 5; animation: fall linear forwards; }
+        @keyframes fall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+        /* --- MOBILE OPTIMIZATION --- */
+        @media (max-width: 850px) {
+            .menu-toggle { display: flex; }
+            .wiki-sidebar {
+                position: fixed; left: -300px; top: 0; height: 100vh;
+                box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            }
+            .wiki-sidebar.open { left: 0; }
+            .wiki-main { padding: 80px 15px 20px 15px; }
+            .content-card { padding: 25px 20px; border-radius: 20px; }
+            h1 { font-size: 24px; }
+            .plugin-grid { grid-template-columns: 1fr; }
+        }
+
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 900; display: none; backdrop-filter: blur(3px);
+        }
+        .sidebar-overlay.active { display: block; }
+
+        .back-home {
+            margin-top: auto; color: #aaa; text-decoration: none; font-size: 14px; 
+            text-align: center; padding: 15px; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .back-home:hover { color: #41fc60; }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="wiki-sidebar" id="sidebar">
+        <div class="wiki-logo">KAMI<span style="color: #41fc60;">WIKI</span></div>
+        
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="wikiSearch" placeholder="Tìm kiếm hướng dẫn..." onkeyup="searchMenu()">
+        </div>
+
+        <div id="menuList">
+            <div class="menu-item active" onclick="changeTab(event, 'tab-intro')"><i class="fas fa-home"></i> Giới thiệu</div>
+            <div class="menu-item" onclick="changeTab(event, 'tab-install')"><i class="fas fa-download"></i> Cài đặt Game & Pack</div>
+            <div class="menu-item" onclick="changeTab(event, 'tab-rules')"><i class="fas fa-gavel"></i> Luật Server</div>
+            <div class="menu-item" onclick="changeTab(event, 'tab-plugins')"><i class="fas fa-plug"></i> Tính năng (Plugins)</div>
+            <div class="menu-item" onclick="changeTab(event, 'tab-guide')"><i class="fas fa-book-open"></i> Cách dùng chi tiết</div>
+            <div class="menu-item" onclick="changeTab(event, 'tab-ranks')"><i class="fas fa-crown"></i> Hệ thống Rank</div>
+        </div>
+
+        <a href="mainwebdone.html" class="back-home">
+            <i class="fas fa-arrow-left"></i> Quay lại trang chủ
+        </a>
+    </div>
+
+    <div class="wiki-main">
+        <div class="content-card">
+            
+            <div id="tab-intro" class="tab-content active">
+                <h1>Khám phá KamiLand</h1>
+                <p>Chào mừng bạn đến với <b>KamiLand</b> - Server Sinh tồn (Survival) độc đáo nơi kết hợp giữa lối chơi truyền thống và hiện đại.</p>
+                <div style="background: rgba(65, 252, 96, 0.1); padding: 15px; border-radius: 15px; border: 1px dashed #41fc60;">
+                    <img src="https://i.redd.it/6921bld180rd1.png" style="width: 100%; border-radius: 15px; margin-top: 10px;" alt="KamiLand">
+                    <p><i class="fas fa-star"></i> Hãy sử dụng thanh tìm kiếm bên trái để tìm nhanh thứ bạn cần!</p>
+                </div>
+            </div>
+
+            <div id="tab-install" class="tab-content">
+                <h1>Hướng dẫn Cài đặt</h1>
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>1. Cách tham gia server (PC/PE)</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <div class="step-item"><b>PC (Java):</b> Khuyên dùng phiên bản 1.21.10+. IP: <code>kamiland.my-land.fun:26196</code></div>
+                        <div class="step-item"><b>Điện thoại (Bedrock):</b> Tải Minecraft PE, thêm tên: <code>KamiLand</code>, địa chỉ IP: <code>kamiland.my-land.fun</code>, Port: <code>26196</code></div>
+                    </div>
+                </div>
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>2. Cách cài đặt Game (PC/PE)</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <p>Tải game qua link này <a href="https://drive.google.com/drive/folders/1YpJ-Hltx4uYTd-nvxl-Z2kwmIAQmA5_i" target="_blank" style="color: #41fc60; text-decoration: underline;">tại đây</a> (nếu đã có sẵn Minecraft thì bỏ qua bước này)</p>
+                    </div>
+                </div>
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>3. Cách cài Resource Pack</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <p>Tải pack qua link này <a href="https://drive.google.com/drive/folders/1YpJ-Hltx4uYTd-nvxl-Z2kwmIAQmA5_i" target="_blank" style="color: #41fc60; text-decoration: underline;">tại đây</a></p>
+                        <p>Để có trải nghiệm tốt nhất, hãy chọn <b>Yes (Đồng ý)</b> khi Server hỏi tải Pack lúc vào game.</p>
+                        <p>Nếu không thấy hiện, hãy gõ lệnh: <code>/resourcepack</code></p>
+                        <p>Bạn nên sử dụng các pack từ server cung cấp để có trải nghiệm tốt nhất.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-rules" class="tab-content">
+                <h1>Luật lệ chung</h1>
+                <div class="law-item"><b>1. Không Hack/Cheat:</b> Cấm mọi hành vi sử dụng phần mềm thứ 3.</div>
+                <div class="law-item"><b>2. Không Phá Hoại:</b> Cấm phá công trình hoặc trộm đồ của người chơi khác.</div>
+                <div class="law-item"><b>3. Văn hóa ứng xử:</b> Không chửi thề, xúc phạm trong chat.</div>
+                <div class="law-item"><b>4. Tuân thủ chỉ dẫn Admin:</b> Nghe theo hướng dẫn của Admin và Mod.</div>
+                <div class="law-item"><b>5. Báo cáo lỗi:</b> Thông báo lỗi kỹ thuật cho Admin.</div>
+                <div class="law-item"><b>6. Không Spam:</b> Tránh spam chat hoặc quảng cáo không phép.</div>
+                <div class="law-item"><b>7. Tôn trọng Quyền riêng tư:</b> Không chia sẻ thông tin cá nhân của người khác.</div>
+                <div class="law-item"><b>8. Hạn chế Xung đột:</b> Giải quyết tranh chấp một cách hòa bình.</div>
+                <div class="law-item"><b>9. Tuân thủ Quy định bổ sung:</b> Chấp hành các quy định khác do Admin đề ra.</div>
+            </div>
+
+            <div id="tab-plugins" class="tab-content">
+                <h1>Tính năng nổi bật</h1>
+                <div class="plugin-grid">
+                    <div class="plugin-box"><b>RealisticSeasons</b> Hệ thống 4 mùa thực tế, ảnh hưởng tới thời tiết và nhiệt độ.</div>
+                    <div class="plugin-box"><b>AuraSkills</b> Nâng cấp kỹ năng: Đào mỏ, Chiến đấu, Nông nghiệp... để mạnh hơn.</div>
+                    <div class="plugin-box"><b>BlueMap</b> Xem bản đồ Server dạng 3D ngay trên trình duyệt web.</div>
+                    <div class="plugin-box"><b>VeinMiner</b> Đào quặng nhanh hơn (Nhấn Shift khi đào để vỡ cả mạch quặng).</div>
+                    <div class="plugin-box"><b>DeathChest</b> Khi chết, đồ của bạn sẽ được giữ trong rương bảo vệ tại vị trí đó.</div>
+                    <div class="plugin-box"><b>GSit</b> Tính năng tương tác: /sit (ngồi), /lay (nằm), /spin (xoay).</div>
+                    <div class="plugin-box"><b>CoreProtect</b> Công cụ bảo vệ vùng đất, giúp Admin tra cứu lịch sử đặt/phá block.</div>
+                    <div class="plugin-box"><b>SimpleTpa</b> Lệnh dịch chuyển đến bạn bè: /tpa [tên].</div>
+                    <div class="plugin-box"><b>Geyser-Spigot</b> Cầu nối cho phép người chơi Bedrock (PE) vào server Java.</div>
+                    <div class="plugin-box"><b>LuckPerms</b> Hệ thống quản lý quyền hạn của người chơi chuyên nghiệp.</div>
+                    <div class="plugin-box"><b>PowerRanks</b> Quản lý các cấp bậc và danh hiệu (Rank) trong server.</div>
+                    <div class="plugin-box"><b>ItemEdit</b> Chỉnh sửa tên, lore và thuộc tính vật phẩm xịn xò.</div>
+                    <div class="plugin-box"><b>Chunky</b> Tối ưu hóa việc tải map giúp server giảm lag tối đa.</div>
+                    <div class="plugin-box"><b>SkinsRestorer</b> Hiển thị skin cho cả tài khoản Crack và Premium.</div>
+                    <div class="plugin-box"><b>ViaVersion / ViaBackwards</b> Hỗ trợ đa dạng phiên bản vào server.</div>
+                </div>
+            </div>
+
+            <div id="tab-guide" class="tab-content">
+                <h1>Cách dùng Plugin chi tiết</h1>
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>AuraSkills - Kỹ năng</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <p>Lệnh: <code>/skills</code>. Giúp nâng cấp các chỉ số sức mạnh khi bạn đào mỏ hoặc chiến đấu.</p>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>GSit - Hành động</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <p>Lệnh: <code>/sit</code> (Ngồi), <code>/lay</code> (Nằm), <code>/spin</code> (Xoay).</p>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>SimpleTpa - Dịch chuyển</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <p>Lệnh: <code>/tpauto</code> để tự động dịch chuyển đến bạn bè gần nhất.</p>
+                        <p>Lệnh: <code>/tpa [tên]</code> để xin dịch chuyển tới bạn bè.</p>
+                        <p>Lệnh: <code>/tpaccept</code> để chấp nhận lời mời dịch chuyển.</p>
+                        <p>Lệnh: <code>/tpdeny</code> để từ chối lời mời dịch chuyển. | Chú ý: Không sử dụng khi đang di chuyển.</p>
+                        <p>Lệnh: <code>/back</code> để quay lại vị trí trước đó. | Chú ý: Lệnh này chỉ lưu vị trí trước khi dịch chuyển hoặc chết.</p>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>VeinMiner - Đào mỏ nhanh</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <p>Giữ phím <b>Ngồi</b> khi đào để phá vỡ cả mạch quặng cùng loại.</p>
+                        <p>Lệnh: <code>/veinminer toggle</code> để bật/tắt tính năng VeinMiner.</p>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>Geyser MC</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <p>Lệnh: <code>/geyser offhand</code> để bật/tắt tính năng offhand cho người chơi Bedrock.</p>
+                        <p>Lệnh: <code>/geyser settings</code> để xem cài đặt Geyser MC.</p>
+                        <p>Lệnh: <code>/geyser statistic</code> để xem thống kê Geyser MC.</p>
+                        <p>Lệnh: <code>/geyser tooltips</code> để bật/tắt tooltips cho người chơi Bedrock.</p>
+                        <p>Lệnh: <code>/geyser ping</code> để xem độ trễ của Geyser MC.</p>
+                        <p>Lệnh: <code>/geyser quickactions</code> để xem các hành động nhanh của Geyser MC.</p>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>SkinsRestorer</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <p>Lệnh: <code>/skin</code> để thay đổi skin của bạn.</p>
+                        <p>Lệnh: <code>/skin clear</code> để xóa skin hiện tại.</p>
+                        <p>Lệnh: <code>/skin update</code> để cập nhật skin mới nhất.</p>
+                        <p><code>Liên hệ admin nếu bạn gặp khó khăn với skin.</code></p>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>BlueMap - Bản đồ 3D</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <p>Truy cập bản đồ 3D của server <a href="http://kamiland.my-land.fun:25841" target="_blank" style="color: #41fc60; text-decoration: underline;">tại đây !</a></p>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-header" onclick="toggleGuide(this)"><span>DeathChest - Rương đồ khi chết</span> <i class="fas fa-chevron-down"></i></div>
+                    <div class="guide-body">
+                        <p>Khi bạn chết, đồ đạc sẽ được bảo vệ trong một chiếc rương tại vị trí bạn chết.</p>
+                        <p>Lệnh: <code>/deathchest list</code> để xem danh sách rương đồ của bạn.</p>
+                        <p>Lệnh: <code>/deathchest tp [số thứ tự]</code> để dịch chuyển đến rương đồ cụ thể.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-ranks" class="tab-content">
+                <h1>Hệ thống Cấp bậc</h1>
+                <ul>
+                    <li style="margin-bottom:10px;"><b>Member:</b> Quyền lợi cơ bản.</li>
+                    <li style="margin-bottom:10px;"><b>VIP:</b> Nhiều lệnh tiện ích hơn.</li>
+                    <li style="margin-bottom:10px;"><b>Moderator:</b> Hỗ trợ quản lý người chơi.</li>
+                    <li style="margin-bottom:10px;"><b>Admin:</b> Người điều hành.</li>
+                    <li style="margin-bottom:10px;"><b>Owner:</b> Người sở hữu server.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // SIDEBAR MOBILE: Đóng mở thanh bên
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        // CHUYỂN TAB VÀ TỰ ĐÓNG MENU TRÊN ĐIỆN THOẠI
+        function changeTab(evt, tabId) {
+            openTab(evt, tabId);
+            // Nếu là điện thoại thì tự đóng sidebar sau khi chọn mục
+            if (window.innerWidth <= 850) {
+                toggleSidebar();
+            }
+        }
+
+        // TÌM KIẾM MENU
+        function searchMenu() {
+            let input = document.getElementById('wikiSearch').value.toLowerCase();
+            let items = document.getElementsByClassName('menu-item');
+            for (let i = 0; i < items.length; i++) {
+                let text = items[i].textContent.toLowerCase();
+                items[i].classList.toggle('hidden', !text.includes(input));
+            }
+        }
+
+        // LOGIC HIỂN THỊ TAB
+        function openTab(evt, tabId) {
+            let i, tabContent, menuItems;
+            tabContent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabContent.length; i++) { tabContent[i].classList.remove("active"); }
+            menuItems = document.getElementsByClassName("menu-item");
+            for (i = 0; i < menuItems.length; i++) { menuItems[i].classList.remove("active"); }
+            document.getElementById(tabId).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        // ĐÓNG MỞ CHI TIẾT (ACCORDION)
+        function toggleGuide(header) {
+            const body = header.nextElementSibling;
+            body.classList.toggle('show');
+            const icon = header.querySelector('.fa-chevron-down');
+            if(icon) {
+                icon.style.transform = body.classList.contains('show') ? "rotate(180deg)" : "rotate(0deg)";
+            }
+        }
+
+        // HIỆU ỨNG HOA ANH ĐÀO
+        function createSakura() {
+            const sakura = document.createElement('div');
+            sakura.classList.add('sakura');
+            const size = Math.random() * 8 + 7 + 'px';
+            sakura.style.width = sakura.style.height = size;
+            sakura.style.left = Math.random() * 100 + 'vw';
+            sakura.style.animationDuration = Math.random() * 4 + 5 + 's';
+            document.body.appendChild(sakura);
+            setTimeout(() => { sakura.remove(); }, 8000);
+        }
+        setInterval(createSakura, 400);
+    </script>
+</body>
+</html>
